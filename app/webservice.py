@@ -9,17 +9,28 @@ from fastapi import FastAPI, File, UploadFile, Query, applications
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from whisper import tokenizer
 from urllib.parse import quote
 
 ASR_ENGINE = os.getenv("ASR_ENGINE", "openai_whisper")
-if ASR_ENGINE == "faster_whisper":
-    from .faster_whisper.core import transcribe, language_detection
-else:
-    from .openai_whisper.core import transcribe, language_detection
-
 SAMPLE_RATE = 16000
-LANGUAGE_CODES = sorted(list(tokenizer.LANGUAGES.keys()))
+
+def transcribe(
+        audio,
+        task: Union[str, None],
+        language: Union[str, None],
+        initial_prompt: Union[str, None],
+        vad_filter: Union[bool, None],
+        word_timestamps: Union[bool, None],
+        output,
+):
+    # write all parameters to log
+    print(f"Task: {task}")
+    print(f"Language: {language}")
+    print(f"Initial Prompt: {initial_prompt}")
+    print(f"VAD Filter: {vad_filter}")
+    print(f"Word Timestamps: {word_timestamps}")
+    print(f"Output: {output}")
+    return True
 
 projectMetadata = importlib.metadata.metadata('whisper-asr-webservice')
 app = FastAPI(
@@ -64,7 +75,7 @@ async def asr(
         audio_file: UploadFile = File(...),
         encode: bool = Query(default=True, description="Encode audio first through ffmpeg"),
         task: Union[str, None] = Query(default="transcribe", enum=["transcribe", "translate"]),
-        language: Union[str, None] = Query(default=None, enum=LANGUAGE_CODES),
+        language: Union[str, None] = Query(default=None, enum='en'),
         initial_prompt: Union[str, None] = Query(default=None),
         vad_filter: Annotated[bool | None, Query(
                 description="Enable the voice activity detection (VAD) to filter out parts of the audio without speech",
@@ -83,14 +94,6 @@ async def asr(
     }
 )
 
-
-@app.post("/detect-language", tags=["Endpoints"])
-async def detect_language(
-        audio_file: UploadFile = File(...),
-        encode: bool = Query(default=True, description="Encode audio first through FFmpeg")
-):
-    detected_lang_code = language_detection(load_audio(audio_file.file, encode))
-    return {"detected_language": tokenizer.LANGUAGES[detected_lang_code], "language_code": detected_lang_code}
 
 
 def load_audio(file: BinaryIO, encode=True, sr: int = SAMPLE_RATE):
