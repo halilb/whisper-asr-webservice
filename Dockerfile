@@ -4,6 +4,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -qq update \
     && apt-get -qq install --no-install-recommends \
     build-essential \
+    openssl \
+    libssl-dev \
     git \
     pkg-config \
     yasm \
@@ -26,13 +28,13 @@ RUN PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./
       --disable-htmlpages \
       --disable-podpages \
       --disable-txtpages \
-      --disable-network \
       --disable-autodetect \
       --disable-hwaccels \
       --disable-ffprobe \
       --disable-ffplay \
       --enable-filter=copy \
       --enable-protocol=file \
+      --enable-openssl \
       --enable-small && \
     PATH="$HOME/bin:$PATH" make -j$(nproc) && \
     make install && \
