@@ -6,9 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - ASR_MODEL=base
+      - ASR_MODEL=tiny
+      - ASR_ENGINE=faster_whisper
     ports:
-      - "9000:9000"
+      - "9001:9000"
     volumes:
       - ./app:/app/app
       - cache-pip:/root/.cache/pip
