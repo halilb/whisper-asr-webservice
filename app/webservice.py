@@ -5,11 +5,13 @@ from typing import Union, Annotated
 
 import ffmpeg
 import numpy as np
-from fastapi import FastAPI, File, UploadFile, Query, applications
+from fastapi import FastAPI, Query, applications
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from whisper import tokenizer
+
+API_SECRET = os.getenv("API_SECRET", "")
 
 ASR_ENGINE = os.getenv("ASR_ENGINE", "openai_whisper")
 if ASR_ENGINE == "faster_whisper":
@@ -69,8 +71,12 @@ async def asr(
                 include_in_schema=(True if ASR_ENGINE == "faster_whisper" else False)
             )] = False,
         word_timestamps: bool = Query(default=False, description="Word level timestamps"),
+        secret: str = Query(default=None, description="Secret key to access the API"),
         output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"])
 ):
+    if secret != API_SECRET:
+        return {"error": "Unauthorized access"}
+
     result = transcribe(load_audio(audio_url), task, language, initial_prompt, vad_filter, word_timestamps, output)
     return StreamingResponse(
     result,
