@@ -1,5 +1,6 @@
 import importlib.metadata
 import os
+import logging
 from os import path
 from typing import Union, Annotated
 
@@ -10,6 +11,10 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from whisper import tokenizer
+
+logging.basicConfig(format='%(asctime)s %(message)s')
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 API_SECRET = os.getenv("API_SECRET", "")
 
@@ -77,7 +82,11 @@ async def asr(
     if secret != API_SECRET:
         return {"error": "Unauthorized access"}
 
-    result = transcribe(load_audio(audio_url), task, language, initial_prompt, vad_filter, word_timestamps, output)
+    logger.info(f"Loading audio from {audio_url}")
+    audio = load_audio(audio_url)
+    logger.info(f"Start transcribing {audio_url}")
+    result = transcribe(audio, task, language, initial_prompt, vad_filter, word_timestamps, output)
+    logger.info(f"Transcription completed. Returning the result.")
     return StreamingResponse(
     result,
     media_type="text/plain",
